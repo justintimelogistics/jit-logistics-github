@@ -72,3 +72,4 @@ export async function isAuthenticated(request, secret) {
 export function clearSessionCookie() {
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 }
+
