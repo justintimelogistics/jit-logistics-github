@@ -1,4 +1,4 @@
-import { clearSessionCookie, createSessionCookie, isAuthenticated } from "./_lib/auth.js";
+import { clearSessionCookie, createSessionCookie, isAuthenticated } from "./lib/auth.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
