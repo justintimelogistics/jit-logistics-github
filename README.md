@@ -1,3 +1,4 @@
+Redeploy check
 # JIT Logistics App
 
 Cloudflare Pages app for the JIT Logistics internal dashboard.
