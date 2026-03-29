@@ -1,4 +1,4 @@
-import { isAuthenticated } from "./_lib/auth.js";
+import { isAuthenticated } from "./lib/auth.js";
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
