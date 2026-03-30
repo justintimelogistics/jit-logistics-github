@@ -1,7 +1,10 @@
 const STORAGE_KEY = "jit-logistics-fuel-log";
+const TIME_CLOCK_STORAGE_KEY = "jit-logistics-time-clock-log";
 const API_BASE = "/api";
 const LOCAL_PROTOCOLS = new Set(["file:"]);
 
+const navButtons = Array.from(document.querySelectorAll("[data-view]"));
+const pages = Array.from(document.querySelectorAll("[data-page]"));
 const openFuelModalButton = document.getElementById("openFuelModal");
 const closeFuelModalButton = document.getElementById("closeFuelModal");
 const cancelFuelModalButton = document.getElementById("cancelFuelModal");
@@ -9,6 +12,17 @@ const fuelModal = document.getElementById("fuelModal");
 const fuelForm = document.getElementById("fuelForm");
 const formNote = document.getElementById("formNote");
 const fuelTableBody = document.getElementById("fuelTableBody");
+const openPunchInModalButton = document.getElementById("openPunchInModal");
+const closePunchInModalButton = document.getElementById("closePunchInModal");
+const cancelPunchInModalButton = document.getElementById("cancelPunchInModal");
+const punchOutButton = document.getElementById("punchOutButton");
+const punchInModal = document.getElementById("punchInModal");
+const punchInForm = document.getElementById("punchInForm");
+const punchInNote = document.getElementById("punchInNote");
+const timeClockTableBody = document.getElementById("timeClockTableBody");
+const timeClockStatus = document.getElementById("timeClockStatus");
+const timeClockSummary = document.getElementById("timeClockSummary");
+const timeClockNote = document.getElementById("timeClockNote");
 const loginForm = document.getElementById("loginForm");
 const loginNote = document.getElementById("loginNote");
 
@@ -20,6 +34,7 @@ const statTargets = {
 };
 
 let fuelEntries = loadFuelEntries();
+let timeClockEntries = loadTimeClockEntries();
 let storageMode = LOCAL_PROTOCOLS.has(window.location.protocol) ? "local" : "remote";
 
 if (storageMode === "remote") {
@@ -49,8 +64,22 @@ function loadFuelEntries() {
   }
 }
 
+function loadTimeClockEntries() {
+  try {
+    const raw = localStorage.getItem(TIME_CLOCK_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
 function saveFuelEntries() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(fuelEntries));
+}
+
+function saveTimeClockEntries() {
+  localStorage.setItem(TIME_CLOCK_STORAGE_KEY, JSON.stringify(timeClockEntries));
 }
 
 async function fetchJson(url, options = {}) {
@@ -96,6 +125,16 @@ function formatDate(isoDate) {
   }).format(new Date(isoDate));
 }
 
+function formatDateTime(isoDate) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(isoDate));
+}
+
 function getLastEntry() {
   return fuelEntries[0] ?? null;
 }
@@ -112,6 +151,28 @@ function calculateMpg(currentOdometer, previousEntry, gallons) {
   }
 
   return milesDriven / gallons;
+}
+
+function getLastTimeClockEntry() {
+  return timeClockEntries[0] ?? null;
+}
+
+function getCurrentShiftEntry() {
+  const latestEntry = getLastTimeClockEntry();
+  return latestEntry && latestEntry.action === "IN" ? latestEntry : null;
+}
+
+function setActiveView(view) {
+  navButtons.forEach((button) => {
+    const isActive = button.dataset.view === view;
+    button.classList.toggle("nav-item-active", isActive);
+  });
+
+  pages.forEach((page) => {
+    const isActive = page.dataset.page === view;
+    page.hidden = !isActive;
+    page.classList.toggle("page-active", isActive);
+  });
 }
 
 function updateFormNote() {
@@ -171,6 +232,51 @@ function renderTable() {
     .join("");
 }
 
+function renderTimeClockStatus() {
+  const currentShift = getCurrentShiftEntry();
+
+  if (!currentShift) {
+    timeClockStatus.textContent = "Ready to start the day.";
+    timeClockSummary.textContent = "Punch in to log the truck and destination. Punch out when the run or shift ends.";
+    timeClockNote.textContent = "No active shift yet.";
+    timeClockNote.classList.remove("status-good", "status-bad");
+    return;
+  }
+
+  timeClockStatus.textContent = `Clocked in on truck ${currentShift.truckId}.`;
+  timeClockSummary.textContent = `Current destination: ${currentShift.destination}. Started ${formatDateTime(currentShift.createdAt)}.`;
+  timeClockNote.textContent = "Active shift running. Use Punch Out when the job ends.";
+  timeClockNote.classList.add("status-good");
+  timeClockNote.classList.remove("status-bad");
+}
+
+function renderTimeClockTable() {
+  if (timeClockEntries.length === 0) {
+    timeClockTableBody.innerHTML = `
+      <tr class="empty-row">
+        <td colspan="4">No time clock entries yet. Punch in to start tracking.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  timeClockTableBody.innerHTML = timeClockEntries
+    .map((entry) => `
+      <tr>
+        <td>${formatDateTime(entry.createdAt)}</td>
+        <td>${entry.action === "IN" ? "Punch In" : "Punch Out"}</td>
+        <td>${entry.truckId || "--"}</td>
+        <td>${entry.destination || "--"}</td>
+      </tr>
+    `)
+    .join("");
+}
+
+function refreshTimeClock() {
+  renderTimeClockStatus();
+  renderTimeClockTable();
+}
+
 function refreshDashboard() {
   renderStats();
   renderTable();
@@ -186,6 +292,24 @@ function closeFuelModal() {
   fuelModal.close();
   fuelForm.reset();
   updateFormNote();
+}
+
+function openPunchInModal() {
+  const currentShift = getCurrentShiftEntry();
+
+  if (currentShift) {
+    setStatus(punchInNote, `Truck ${currentShift.truckId} is already punched in. Punch out first.`, "status-bad");
+    return;
+  }
+
+  setStatus(punchInNote, "Punching in starts an active shift for the latest driver using this shared app.", "");
+  punchInModal.showModal();
+}
+
+function closePunchInModal() {
+  punchInModal.close();
+  punchInForm.reset();
+  setStatus(punchInNote, "Punching in starts an active shift for the latest driver using this shared app.", "");
 }
 
 async function loadRemoteSession() {
@@ -214,6 +338,22 @@ async function loadRemoteFuelEntries() {
   refreshDashboard();
 }
 
+async function loadRemoteTimeClockEntries() {
+  const { response, payload } = await fetchJson(`${API_BASE}/timeclock`);
+
+  if (response.status === 401) {
+    setAuthRequired(true);
+    return;
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.error ?? "Unable to load time clock entries.");
+  }
+
+  timeClockEntries = Array.isArray(payload?.entries) ? payload.entries : [];
+  refreshTimeClock();
+}
+
 async function saveRemoteFuelEntry(entry) {
   const { response, payload } = await fetchJson(`${API_BASE}/fuel`, {
     method: "POST",
@@ -233,6 +373,25 @@ async function saveRemoteFuelEntry(entry) {
   refreshDashboard();
 }
 
+async function saveRemoteTimeClockEntry(entry) {
+  const { response, payload } = await fetchJson(`${API_BASE}/timeclock`, {
+    method: "POST",
+    body: JSON.stringify(entry),
+  });
+
+  if (response.status === 401) {
+    setAuthRequired(true);
+    throw new Error("Your session expired. Sign in again.");
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.error ?? "Unable to save time clock entry.");
+  }
+
+  timeClockEntries = Array.isArray(payload?.entries) ? payload.entries : timeClockEntries;
+  refreshTimeClock();
+}
+
 async function bootstrapRemoteMode() {
   try {
     const session = await loadRemoteSession();
@@ -244,18 +403,30 @@ async function bootstrapRemoteMode() {
 
     setAuthRequired(false);
     await loadRemoteFuelEntries();
+    await loadRemoteTimeClockEntries();
   } catch (error) {
     storageMode = "local";
     saveFuelEntries();
+    saveTimeClockEntries();
     refreshDashboard();
+    refreshTimeClock();
     setStatus(loginNote, "Cloud sync is unavailable right now. The app is running in local mode on this device.", "status-bad");
     setAuthRequired(false);
   }
 }
 
+navButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setActiveView(button.dataset.view);
+  });
+});
+
 openFuelModalButton.addEventListener("click", openFuelModal);
 closeFuelModalButton.addEventListener("click", closeFuelModal);
 cancelFuelModalButton.addEventListener("click", closeFuelModal);
+openPunchInModalButton.addEventListener("click", openPunchInModal);
+closePunchInModalButton.addEventListener("click", closePunchInModal);
+cancelPunchInModalButton.addEventListener("click", closePunchInModal);
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -277,6 +448,7 @@ loginForm.addEventListener("submit", async (event) => {
     setStatus(loginNote, "Signed in. Loading your shared fuel log now.", "status-good");
     setAuthRequired(false);
     await loadRemoteFuelEntries();
+    await loadRemoteTimeClockEntries();
   } catch (error) {
     setStatus(loginNote, "Sign-in failed. Check the password or Cloudflare setup.", "status-bad");
   }
@@ -285,6 +457,18 @@ loginForm.addEventListener("submit", async (event) => {
 fuelForm.addEventListener("submit", (event) => {
   handleFuelSubmit(event).catch((error) => {
     setStatus(formNote, error.message, "status-bad");
+  });
+});
+
+punchInForm.addEventListener("submit", (event) => {
+  handlePunchInSubmit(event).catch((error) => {
+    setStatus(punchInNote, error.message, "status-bad");
+  });
+});
+
+punchOutButton.addEventListener("click", () => {
+  handlePunchOut().catch((error) => {
+    setStatus(timeClockNote, error.message, "status-bad");
   });
 });
 
@@ -332,7 +516,73 @@ async function handleFuelSubmit(event) {
   closeFuelModal();
 }
 
+async function handlePunchInSubmit(event) {
+  event.preventDefault();
+
+  const truckId = document.getElementById("truckId").value.trim();
+  const destination = document.getElementById("destination").value.trim();
+
+  if (!truckId || !destination) {
+    setStatus(punchInNote, "Truck ID and destination are both required.", "status-bad");
+    return;
+  }
+
+  if (getCurrentShiftEntry()) {
+    setStatus(punchInNote, "There is already an active shift. Punch out first.", "status-bad");
+    return;
+  }
+
+  const newEntry = {
+    action: "IN",
+    truckId,
+    destination,
+  };
+
+  if (storageMode === "remote") {
+    await saveRemoteTimeClockEntry(newEntry);
+  } else {
+    timeClockEntries.unshift({
+      createdAt: new Date().toISOString(),
+      ...newEntry,
+    });
+    saveTimeClockEntries();
+    refreshTimeClock();
+  }
+
+  closePunchInModal();
+}
+
+async function handlePunchOut() {
+  const currentShift = getCurrentShiftEntry();
+
+  if (!currentShift) {
+    setStatus(timeClockNote, "Nobody is currently punched in.", "status-bad");
+    return;
+  }
+
+  const newEntry = {
+    action: "OUT",
+    truckId: currentShift.truckId,
+    destination: currentShift.destination,
+  };
+
+  if (storageMode === "remote") {
+    await saveRemoteTimeClockEntry(newEntry);
+  } else {
+    timeClockEntries.unshift({
+      createdAt: new Date().toISOString(),
+      ...newEntry,
+    });
+    saveTimeClockEntries();
+    refreshTimeClock();
+  }
+
+  setStatus(timeClockNote, "Shift punched out successfully.", "status-good");
+}
+
 refreshDashboard();
+refreshTimeClock();
+setActiveView("dashboard");
 
 if (storageMode === "remote") {
   bootstrapRemoteMode();
