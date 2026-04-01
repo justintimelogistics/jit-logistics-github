@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Just In Time Logistics Dashboard V2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Lobster&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-required">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-lockup">
+        <p class="brand-script">Just In Time Logistics</p>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item nav-item-active" data-view="dashboard" type="button">Dashboard</button>
+        <button class="nav-item" data-view="management" type="button">Management</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <section class="page page-active" data-page="dashboard">
+        <header class="topbar topbar-dashboard">
+          <h2 class="page-title">Dashboard</h2>
+
+          <div class="action-strip">
+            <button class="primary-button" id="dashboardAddFuelButton" type="button">Add Fuel</button>
+            <button class="secondary-button" id="ctHutButton" type="button">CT Hut</button>
+          </div>
+        </header>
+
+        <section class="warning-bar" id="warningBar" hidden>
+          <p class="warning-label">Attention</p>
+          <p class="warning-copy" id="warningText"></p>
+        </section>
+
+        <section class="gauges-grid">
+          <button class="gauge-card gauge-card-clickable" id="dutyGaugeButton" type="button">
+            <div class="gauge-shell gauge-shell-lg" id="dutyGauge">
+              <div class="gauge-inner">
+                <p class="gauge-label">14 HR</p>
+                <p class="gauge-value gauge-font" id="dutyGaugeValue">14:00</p>
+                <p class="gauge-meta" id="dutyGaugeMeta">Waiting to clock in</p>
+              </div>
+            </div>
+          </button>
+
+          <button class="gauge-card gauge-card-clickable" id="breakGaugeButton" type="button">
+            <div class="gauge-shell gauge-shell-lg" id="breakGauge">
+              <div class="gauge-inner">
+                <p class="gauge-label">10 HR</p>
+                <p class="gauge-value gauge-font" id="breakGaugeValue">0:00</p>
+                <p class="gauge-meta" id="breakGaugeMeta">Break not started</p>
+              </div>
+            </div>
+          </button>
+
+          <button class="gauge-card gauge-card-clickable" id="weeklyGaugeButton" type="button">
+            <div class="gauge-shell gauge-shell-lg" id="weeklyGauge">
+              <div class="gauge-inner">
+                <p class="gauge-label" id="weeklyGaugeLabel">70 HR</p>
+                <p class="gauge-value gauge-font" id="weeklyGaugeValue">70:00</p>
+                <p class="gauge-meta" id="weeklyGaugeMeta">Fresh weekly cycle</p>
+              </div>
+            </div>
+          </button>
+        </section>
+
+        <section class="dashboard-data">
+          <div class="dashboard-line">
+            <span class="dashboard-key">Status</span>
+            <strong class="dashboard-value" id="driverStatusTitle">Off duty</strong>
+          </div>
+          <div class="dashboard-line">
+            <span class="dashboard-key">Current shift</span>
+            <span class="dashboard-value dashboard-value-soft" id="driverStatusCopy">Punch in from the 14-hour clock when you are ready to start.</span>
+          </div>
+          <div class="dashboard-line">
+            <span class="dashboard-key">Destination</span>
+            <span class="dashboard-value dashboard-value-soft" id="driverStatusNote">No active destination.</span>
+          </div>
+          <div class="dashboard-line">
+            <span class="dashboard-key">Last fuel cost</span>
+            <strong class="dashboard-value" id="dashboardLastFuelCost">--</strong>
+          </div>
+          <div class="dashboard-line">
+            <span class="dashboard-key">Last MPG</span>
+            <strong class="dashboard-value" id="dashboardLastMpg">--</strong>
+          </div>
+          <div class="dashboard-line">
+            <span class="dashboard-key">Total fuel spend</span>
+            <strong class="dashboard-value" id="dashboardTotalFuelSpend">$0.00</strong>
+          </div>
+        </section>
+      </section>
+
+      <section class="page" data-page="management" hidden>
+        <header class="topbar topbar-management">
+          <h2 class="page-title">Management</h2>
+
+          <div class="mode-switch-panel">
+            <p class="gauge-mode-label">Weekly Rule</p>
+            <div class="mode-switch">
+              <button class="mode-switch-button mode-switch-active" data-weekly-mode="70" type="button">70 / 8</button>
+              <button class="mode-switch-button" data-weekly-mode="60" type="button">60 / 7</button>
+            </div>
+          </div>
+        </header>
+
+        <div class="management-tabs">
+          <button class="management-tab management-tab-active" data-management-view="overview" type="button">Overview</button>
+          <button class="management-tab" data-management-view="fuel" type="button">Fuel and MPG Control</button>
+          <button class="management-tab" data-management-view="timeclock" type="button">Time Clock</button>
+          <button class="management-tab" data-management-view="cthut" type="button">CT Hut Reports</button>
+          <button class="management-tab" data-management-view="maintenance" type="button">Maintenance</button>
+        </div>
+
+        <section class="management-page management-page-active" data-management-page="overview">
+          <section class="management-heading">
+            <p class="eyebrow">Overview</p>
+            <h3>Operations Overview</h3>
+          </section>
+
+          <section class="overview-grid">
+            <button class="overview-dial" id="overviewMpgCard" type="button">
+              <div class="gauge-shell overview-shell">
+                <div class="gauge-inner">
+                  <p class="gauge-label">MPG</p>
+                  <p class="gauge-value gauge-font overview-value" id="overviewMpgValue">--</p>
+                  <p class="gauge-meta overview-meta" id="overviewMpgMeta">30 DAY</p>
+                </div>
+              </div>
+            </button>
+
+            <button class="overview-dial" id="overviewFuelPriceCard" type="button">
+              <div class="gauge-shell overview-shell">
+                <div class="gauge-inner">
+                  <p class="gauge-label">FUEL PRICE</p>
+                  <p class="gauge-value gauge-font overview-value" id="overviewFuelPriceValue">--</p>
+                  <p class="gauge-meta overview-meta" id="overviewFuelPriceMeta">30 DAY</p>
+                </div>
+              </div>
+            </button>
+
+            <button class="overview-dial" id="overviewPmCard" type="button">
+              <div class="gauge-shell overview-shell">
+                <div class="gauge-inner">
+                  <p class="gauge-label">MILES TO PM</p>
+                  <p class="gauge-value gauge-font overview-value" id="overviewPmValue">--</p>
+                  <p class="gauge-meta overview-meta" id="overviewPmMeta">TO PM</p>
+                </div>
+              </div>
+            </button>
+
+            <button class="overview-dial" id="overviewCostMonthCard" type="button">
+              <div class="gauge-shell overview-shell">
+                <div class="gauge-inner">
+                  <p class="gauge-label">COST / MILE</p>
+                  <p class="gauge-value gauge-font overview-value" id="overviewCostMonthValue">--</p>
+                  <p class="gauge-meta overview-meta" id="overviewCostMonthMeta">MTD</p>
+                </div>
+              </div>
+            </button>
+
+            <button class="overview-dial" id="overviewCostRollingCard" type="button">
+              <div class="gauge-shell overview-shell">
+                <div class="gauge-inner">
+                  <p class="gauge-label">COST / MILE</p>
+                  <p class="gauge-value gauge-font overview-value" id="overviewCostRollingValue">--</p>
+                  <p class="gauge-meta overview-meta" id="overviewCostRollingMeta">30 DAY</p>
+                </div>
+              </div>
+            </button>
+
+            <button class="overview-dial" id="overviewRevenueCard" type="button">
+              <div class="gauge-shell overview-shell">
+                <div class="gauge-inner">
+                  <p class="gauge-label">REVENUE / MILE</p>
+                  <p class="gauge-value gauge-font overview-value" id="overviewRevenueValue">--</p>
+                  <p class="gauge-meta overview-meta" id="overviewRevenueMeta">30 DAY</p>
+                </div>
+              </div>
+            </button>
+          </section>
+        </section>
+
+        <section class="management-page" data-management-page="fuel" hidden>
+          <section class="hero-card hero-card-plain">
+            <div>
+              <p class="eyebrow">Fuel Desk</p>
+              <h3>Fuel and MPG Control</h3>
+            </div>
+            <button class="primary-button" id="managementAddFuelButton" type="button">Add Fuel</button>
+          </section>
+
+          <section class="stats-grid">
+            <article class="stat-card">
+              <p class="stat-label">Last Odometer</p>
+              <p class="stat-value" id="lastOdometer">--</p>
+            </article>
+            <article class="stat-card">
+              <p class="stat-label">Last Fuel Cost</p>
+              <p class="stat-value" id="lastFuelCost">--</p>
+            </article>
+            <article class="stat-card">
+              <p class="stat-label">Last MPG</p>
+              <p class="stat-value" id="lastMpg">--</p>
+            </article>
+            <article class="stat-card">
+              <p class="stat-label">Total Fuel Spend</p>
+              <p class="stat-value" id="totalFuelSpend">$0.00</p>
+            </article>
+          </section>
+
+          <section class="panel-grid panel-grid-single">
+            <article class="panel panel-large panel-flat">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Recent Entries</p>
+                  <h3>Fuel log</h3>
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Odometer</th>
+                      <th>Gallons</th>
+                      <th>Price</th>
+                      <th>Total</th>
+                      <th>MPG</th>
+                    </tr>
+                  </thead>
+                  <tbody id="fuelTableBody">
+                    <tr class="empty-row">
+                      <td colspan="6">No fuel entries yet. Use the Add Fuel button to log the first stop.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        </section>
+
+        <section class="management-page" data-management-page="timeclock" hidden>
+          <section class="hero-card hero-card-plain hero-card-tight">
+            <div>
+              <p class="eyebrow">Time Clock Desk</p>
+              <h3>Time Clock</h3>
+            </div>
+          </section>
+
+          <section class="action-grid action-grid-single">
+            <article class="panel action-panel panel-flat">
+              <p class="eyebrow">Manual Action</p>
+              <h3>Backup punch out</h3>
+              <button class="secondary-button" id="managementPunchOutButton" type="button">Punch Out</button>
+              <p class="form-note" id="timeClockNote">No active shift yet.</p>
+            </article>
+          </section>
+
+          <section class="panel-grid panel-grid-single">
+            <article class="panel panel-large panel-flat">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Recent Time Entries</p>
+                  <h3>Time clock log</h3>
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Action</th>
+                      <th>Destination</th>
+                    </tr>
+                  </thead>
+                  <tbody id="timeClockTableBody">
+                    <tr class="empty-row">
+                      <td colspan="3">No time clock entries yet. Tap the 14-hour clock to start tracking.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        </section>
+
+        <section class="management-page" data-management-page="cthut" hidden>
+          <section class="hero-card hero-card-plain">
+            <div>
+              <p class="eyebrow">CT Hut Desk</p>
+              <h3>CT Hut reporting</h3>
+            </div>
+            <div class="action-strip">
+              <button class="secondary-button" id="managementCtHutButton" type="button">Add CT Hut</button>
+              <button class="primary-button" id="downloadCtHutButton" type="button">Download CSV</button>
+            </div>
+          </section>
+
+          <section class="report-filter-strip">
+            <label class="report-filter-select">
+              <span>Report Window</span>
+              <select id="ctHutRangeSelect">
+                <option value="quarterly">Quarterly</option>
+                <option value="30">30 Days</option>
+                <option value="60">60 Days</option>
+                <option value="current-year">Current Year</option>
+                <option value="ytd">YTD</option>
+              </select>
+            </label>
+          </section>
+
+          <section class="stats-grid stats-grid-three">
+            <article class="stat-card">
+              <p class="stat-label">Reported miles</p>
+              <p class="stat-value" id="ctHutMiles">0</p>
+            </article>
+            <article class="stat-card">
+              <p class="stat-label">Estimated CT Hut</p>
+              <p class="stat-value" id="ctHutAmount">$0.00</p>
+            </article>
+            <article class="stat-card">
+              <p class="stat-label">Bobtail miles</p>
+              <p class="stat-value" id="ctHutBobtailMiles">0</p>
+            </article>
+          </section>
+
+          <section class="panel-grid panel-grid-single">
+            <article class="panel panel-large panel-flat">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Filtered View</p>
+                  <h3>CT Hut report</h3>
+                </div>
+                <p class="form-note" id="ctHutReportNote">Current quarter view.</p>
+              </div>
+
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Mileage</th>
+                      <th>Weight</th>
+                      <th>Miles Since Last</th>
+                      <th>Rate</th>
+                      <th>Charge</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ctHutTableBody">
+                    <tr class="empty-row">
+                      <td colspan="6">No CT Hut entries yet. Use the dashboard button to log the first one.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        </section>
+
+        <section class="management-page" data-management-page="maintenance" hidden>
+          <section class="hero-card hero-card-plain">
+            <div>
+              <p class="eyebrow">Maintenance Desk</p>
+              <h3>Maintenance</h3>
+            </div>
+            <button class="primary-button" id="addMaintenanceButton" type="button">Add Service</button>
+          </section>
+
+          <section class="stats-grid stats-grid-three">
+            <article class="stat-card">
+              <p class="stat-label">Last Service</p>
+              <p class="stat-value" id="maintenanceLastService">--</p>
+            </article>
+            <article class="stat-card">
+              <p class="stat-label">Next PM</p>
+              <p class="stat-value" id="maintenanceNextPm">--</p>
+            </article>
+            <article class="stat-card">
+              <p class="stat-label">YTD Cost</p>
+              <p class="stat-value" id="maintenanceYtdCost">$0.00</p>
+            </article>
+          </section>
+
+          <section class="panel-grid panel-grid-single">
+            <article class="panel panel-large panel-flat">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Service Log</p>
+                  <h3>Maintenance</h3>
+                </div>
+                <p class="form-note" id="maintenanceNote">Log PMs, repairs, and next-due targets here.</p>
+              </div>
+
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Service</th>
+                      <th>Odometer</th>
+                      <th>Cost</th>
+                      <th>Next Due</th>
+                      <th>Note</th>
+                    </tr>
+                  </thead>
+                  <tbody id="maintenanceTableBody">
+                    <tr class="empty-row">
+                      <td colspan="6">No maintenance entries yet. Add the first service to start tracking PM history.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="auth-shell" id="authShell" hidden>
+    <div class="auth-card auth-card-plain">
+      <p class="eyebrow">Private Access</p>
+      <h2>Sign in to Just In Time Logistics</h2>
+
+      <form id="loginForm" class="auth-form">
+        <label>
+          <span>Password</span>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <p class="form-note" id="loginNote">This protects the live app while we keep building.</p>
+        <button class="primary-button" type="submit">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <dialog class="modal" id="fuelModal">
+    <form class="modal-card modal-card-plain" id="fuelForm" method="dialog">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Fuel Entry</p>
+          <h3>Add a new fill-up</h3>
+        </div>
+        <button class="icon-button" id="closeFuelModal" type="button" aria-label="Close fuel form">x</button>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          <span>Current mile</span>
+          <input id="currentMile" name="currentMile" type="number" min="0" step="1" placeholder="112450" required>
+        </label>
+
+        <label>
+          <span>Fuel amount (gallons)</span>
+          <input id="fuelAmount" name="fuelAmount" type="number" min="0" step="0.01" placeholder="76.50" required>
+        </label>
+
+        <label>
+          <span>Fuel price per gallon</span>
+          <input id="fuelPrice" name="fuelPrice" type="number" min="0" step="0.001" placeholder="3.799" required>
+        </label>
+      </div>
+
+      <p class="form-note" id="fuelGeotabNote">Open this from the live app to let Geotab prefill the latest mileage and location.</p>
+      <p class="form-note" id="formNote">The first entry sets your starting point. MPG starts calculating from the second fuel stop.</p>
+
+      <div class="modal-actions">
+        <button class="secondary-button" id="cancelFuelModal" type="button">Cancel</button>
+        <button class="primary-button" type="submit">Save Fuel Entry</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="dutyModal">
+    <form class="modal-card modal-card-plain" id="dutyForm" method="dialog">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Duty Action</p>
+          <h3 id="dutyModalTitle">Punch In</h3>
+        </div>
+        <button class="icon-button" id="closeDutyModal" type="button" aria-label="Close duty form">x</button>
+      </div>
+
+      <div id="dutyWarningGate" hidden>
+        <div class="acknowledge-block">
+          <p class="warning-label">Break Warning</p>
+          <p class="warning-copy" id="dutyWarningText">Your 10-hour break has not been met yet.</p>
+          <div class="acknowledge-actions">
+            <button class="primary-button" id="dutyAcknowledgeButton" type="button">Acknowledge</button>
+            <button class="secondary-button" id="dutyCancelGateButton" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="punchInFields">
+        <div class="form-grid">
+          <label>
+            <span>Destination</span>
+            <input id="destination" name="destination" type="text" placeholder="Hartford, CT">
+          </label>
+        </div>
+      </div>
+
+      <div id="punchOutFields" hidden>
+        <p class="form-note">This ends the current duty status and starts your off-duty break timer.</p>
+      </div>
+
+      <p class="form-note" id="dutyNote">Tap save to log the next duty action.</p>
+
+      <div class="modal-actions">
+        <button class="secondary-button" id="cancelDutyModal" type="button">Cancel</button>
+        <button class="primary-button" id="dutySubmitButton" type="submit">Save Action</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="ctHutModal">
+    <form class="modal-card modal-card-plain" id="ctHutForm" method="dialog">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">CT Hut Entry</p>
+          <h3>Log a CT Hut stop</h3>
+        </div>
+        <button class="icon-button" id="closeCtHutModal" type="button" aria-label="Close CT Hut form">x</button>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          <span>Current mileage</span>
+          <input id="ctHutMileage" name="ctHutMileage" type="number" min="0" step="1" placeholder="112450" required>
+        </label>
+
+        <label>
+          <span>Weight</span>
+          <input id="ctHutWeight" name="ctHutWeight" type="number" min="0" step="1" placeholder="64000">
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <button class="secondary-button toggle-button" id="bobtailToggle" type="button" aria-pressed="false">Bobtail Exempt</button>
+      </div>
+
+      <p class="form-note" id="ctHutGeotabNote">Open this from the live app to let Geotab prefill the latest mileage and location.</p>
+      <p class="form-note" id="ctHutNote">Mileage between CT Hut stops will be tracked automatically for reporting.</p>
+
+      <div class="modal-actions">
+        <button class="secondary-button" id="cancelCtHutModal" type="button">Cancel</button>
+        <button class="primary-button" type="submit">Save CT Hut Entry</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="maintenanceModal">
+    <form class="modal-card modal-card-plain" id="maintenanceForm" method="dialog">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Maintenance Entry</p>
+          <h3>Add service</h3>
+        </div>
+        <button class="icon-button" id="closeMaintenanceModal" type="button" aria-label="Close maintenance form">x</button>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          <span>Service date</span>
+          <input id="maintenanceDate" name="maintenanceDate" type="date" required>
+        </label>
+
+        <label>
+          <span>Odometer</span>
+          <input id="maintenanceOdometer" name="maintenanceOdometer" type="number" min="0" step="1" placeholder="112450" required>
+        </label>
+
+        <label>
+          <span>Service type</span>
+          <input id="maintenanceType" name="maintenanceType" type="text" placeholder="PM Service" required>
+        </label>
+
+        <label>
+          <span>Cost</span>
+          <input id="maintenanceCost" name="maintenanceCost" type="number" min="0" step="0.01" placeholder="425.00" required>
+        </label>
+
+        <label>
+          <span>Next due mileage</span>
+          <input id="maintenanceNextDueMileage" name="maintenanceNextDueMileage" type="number" min="0" step="1" placeholder="122450">
+        </label>
+
+        <label>
+          <span>Next due date</span>
+          <input id="maintenanceNextDueDate" name="maintenanceNextDueDate" type="date">
+        </label>
+      </div>
+
+      <label class="form-stack">
+        <span>Note</span>
+        <textarea id="maintenanceDescription" name="maintenanceDescription" rows="3" placeholder="Filters, oil, grease, tires, brakes..."></textarea>
+      </label>
+
+      <p class="form-note" id="maintenanceFormNote">Use this for PMs, repairs, and scheduled service history.</p>
+
+      <div class="modal-actions">
+        <button class="secondary-button" id="cancelMaintenanceModal" type="button">Cancel</button>
+        <button class="primary-button" type="submit">Save Service</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
