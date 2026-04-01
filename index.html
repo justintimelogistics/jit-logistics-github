@@ -116,6 +116,7 @@
           <button class="management-tab management-tab-active" data-management-view="overview" type="button">Overview</button>
           <button class="management-tab" data-management-view="fuel" type="button">Fuel and MPG Control</button>
           <button class="management-tab" data-management-view="timeclock" type="button">Time Clock</button>
+          <button class="management-tab" data-management-view="revenue" type="button">Customer Invoice</button>
           <button class="management-tab" data-management-view="cthut" type="button">CT Hut Reports</button>
           <button class="management-tab" data-management-view="maintenance" type="button">Maintenance</button>
         </div>
@@ -257,6 +258,21 @@
             </div>
           </section>
 
+          <section class="stats-grid stats-grid-three">
+            <article class="stat-card">
+              <p class="stat-label">Current Status</p>
+              <p class="stat-value" id="timeClockStatusValue">Off duty</p>
+            </article>
+            <article class="stat-card">
+              <p class="stat-label">Last In</p>
+              <p class="stat-value" id="timeClockLastInValue">--</p>
+            </article>
+            <article class="stat-card">
+              <p class="stat-label">Today On Duty</p>
+              <p class="stat-value" id="timeClockTodayHoursValue">0:00</p>
+            </article>
+          </section>
+
           <section class="action-grid action-grid-single">
             <article class="panel action-panel panel-flat">
               <p class="eyebrow">Manual Action</p>
@@ -287,6 +303,61 @@
                   <tbody id="timeClockTableBody">
                     <tr class="empty-row">
                       <td colspan="3">No time clock entries yet. Tap the 14-hour clock to start tracking.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        </section>
+
+        <section class="management-page" data-management-page="revenue" hidden>
+          <section class="hero-card hero-card-plain">
+            <div>
+              <p class="eyebrow">Customer Invoice Desk</p>
+              <h3>Customer Invoice</h3>
+            </div>
+            <button class="primary-button" id="managementRevenueButton" type="button">Add Invoice</button>
+          </section>
+
+          <section class="stats-grid stats-grid-three">
+            <article class="stat-card">
+              <p class="stat-label">Last Invoice</p>
+              <p class="stat-value" id="revenueLastInvoiceValue">--</p>
+            </article>
+            <article class="stat-card">
+              <p class="stat-label">MTD Revenue</p>
+              <p class="stat-value" id="revenueMonthValue">$0.00</p>
+            </article>
+            <article class="stat-card">
+              <p class="stat-label">YTD Revenue</p>
+              <p class="stat-value" id="revenueYtdValue">$0.00</p>
+            </article>
+          </section>
+
+          <section class="panel-grid panel-grid-single">
+            <article class="panel panel-large panel-flat">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Revenue Log</p>
+                  <h3>Invoices</h3>
+                </div>
+                <p class="form-note" id="revenueNote">Customer invoices stay separate from maintenance and fuel expenses.</p>
+              </div>
+
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Customer</th>
+                      <th>Amount</th>
+                      <th>Reference</th>
+                    </tr>
+                  </thead>
+                  <tbody id="revenueTableBody">
+                    <tr class="empty-row">
+                      <td colspan="4">No customer invoices yet. Use Add Invoice to start tracking revenue.</td>
                     </tr>
                   </tbody>
                 </table>
