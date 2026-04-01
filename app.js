@@ -178,7 +178,6 @@ const closeRevenueModalButton = document.getElementById("closeRevenueModal");
 const cancelRevenueModalButton = document.getElementById("cancelRevenueModal");
 const revenueTableBody = document.getElementById("revenueTableBody");
 const revenueNote = document.getElementById("revenueNote");
-const revenueLastInvoiceValue = document.getElementById("revenueLastInvoiceValue");
 const revenueMonthValue = document.getElementById("revenueMonthValue");
 const revenueYtdValue = document.getElementById("revenueYtdValue");
 const deleteRevenueEntryButton = document.getElementById("deleteRevenueEntryButton");
@@ -1010,6 +1009,43 @@ function getNextPmCountdown(odometer) {
   return getMilesToNextPm(odometer);
 }
 
+function getPmAlertState(now = new Date()) {
+  const latestOdometer = getLatestOdometer();
+  const nextPmCountdown = getNextPmCountdown(latestOdometer);
+  const latestPmEntry = getMaintenanceEntriesDescending().find((entry) => isPmService(entry.serviceType));
+  const nextDueDate = latestPmEntry?.nextDueDate ? new Date(latestPmEntry.nextDueDate) : null;
+  const dueSoonMiles = Number.isFinite(nextPmCountdown) ? nextPmCountdown <= 1000 : false;
+  const overdueMiles = Number.isFinite(nextPmCountdown) ? nextPmCountdown <= 0 : false;
+  const dueSoonDate = nextDueDate ? (nextDueDate.getTime() - now.getTime()) <= 7 * DAY_MS && nextDueDate.getTime() >= now.getTime() : false;
+  const overdueDate = nextDueDate ? nextDueDate.getTime() < now.getTime() : false;
+
+  if (overdueMiles || overdueDate) {
+    return {
+      level: "overdue",
+      nextPmCountdown,
+      message: overdueMiles
+        ? "PM is overdue now."
+        : `PM date is overdue since ${formatDate(nextDueDate)}.`,
+    };
+  }
+
+  if (dueSoonMiles || dueSoonDate) {
+    return {
+      level: "soon",
+      nextPmCountdown,
+      message: dueSoonMiles
+        ? `PM due soon in ${formatNumber(nextPmCountdown)} miles.`
+        : `PM due soon on ${formatDate(nextDueDate)}.`,
+    };
+  }
+
+  return {
+    level: "ok",
+    nextPmCountdown,
+    message: nextPmCountdown == null ? "No PM target set yet." : `Next PM in ${formatNumber(nextPmCountdown)} miles.`,
+  };
+}
+
 function renderOverviewSection() {
   const now = new Date();
   const fuelAsc = getFuelEntriesAscending();
@@ -1038,10 +1074,17 @@ function renderOverviewSection() {
   overviewFuelPriceMeta.textContent = overviewHoldState.fuelPrice ? "YTD" : "30 DAY";
 
   const latestOdometer = getLatestOdometer();
-  const pmCountdown = getNextPmCountdown(latestOdometer);
+  const pmAlert = getPmAlertState(now);
+  const pmCountdown = pmAlert.nextPmCountdown;
   const ytdMiles = getPeriodMiles(ytdEntries);
   overviewPmValue.textContent = overviewHoldState.pm ? formatNumber(ytdMiles) : (pmCountdown == null ? "--" : formatNumber(pmCountdown));
-  overviewPmMeta.textContent = overviewHoldState.pm ? "YTD" : "TO PM";
+  overviewPmMeta.textContent = overviewHoldState.pm
+    ? "YTD"
+    : pmAlert.level === "overdue"
+      ? "OVERDUE"
+      : pmAlert.level === "soon"
+        ? "DUE SOON"
+        : "TO PM";
 
   const monthCostPerMile = getCombinedCostPerMile(monthEntries, monthMaintenance);
   const ytdCostPerMile = getCombinedCostPerMile(ytdEntries, ytdMaintenance);
@@ -1060,14 +1103,16 @@ function renderOverviewSection() {
 }
 
 function renderMaintenanceSection() {
+  const now = new Date();
   const entries = getMaintenanceEntriesDescending();
   const latestEntry = entries[0];
   const latestOdometer = getLatestOdometer();
-  const nextPmCountdown = getNextPmCountdown(latestOdometer);
+  const pmAlert = getPmAlertState(now);
+  const nextPmCountdown = pmAlert.nextPmCountdown;
   const ytdCost = getPeriodMaintenanceCost(getRangeEntries(entries, getStartOfYear(new Date())));
 
   maintenanceLastService.textContent = latestEntry ? `${latestEntry.serviceType} | ${formatDate(latestEntry.serviceDate)}` : "--";
-  maintenanceNextPm.textContent = nextPmCountdown == null ? "--" : `${formatNumber(nextPmCountdown)} mi`;
+  maintenanceNextPm.textContent = nextPmCountdown == null ? "--" : (pmAlert.level === "overdue" ? "OVERDUE" : `${formatNumber(nextPmCountdown)} mi`);
   maintenanceYtdCost.textContent = formatCurrency(ytdCost);
 
   if (entries.length === 0) {
@@ -1081,7 +1126,11 @@ function renderMaintenanceSection() {
   }
 
   const nextDueEntry = entries.find((entry) => Number.isFinite(Number(entry.nextDueMileage)) || entry.nextDueDate);
-  if (nextDueEntry) {
+  if (pmAlert.level === "overdue") {
+    setStatus(maintenanceNote, pmAlert.message, "status-bad");
+  } else if (pmAlert.level === "soon") {
+    setStatus(maintenanceNote, pmAlert.message, "status-info");
+  } else if (nextDueEntry) {
     const dueParts = [];
     if (Number.isFinite(Number(nextDueEntry.nextDueMileage))) {
       dueParts.push(`${formatNumber(nextDueEntry.nextDueMileage)} mi`);
@@ -1159,7 +1208,6 @@ function renderRevenueSection() {
   const ytdEntries = getRangeEntries(entries, getStartOfYear(new Date()));
   const lastEntry = entries[0];
 
-  revenueLastInvoiceValue.textContent = lastEntry ? formatCurrency(lastEntry.amount) : "--";
   revenueMonthValue.textContent = formatCurrency(getPeriodRevenue(monthEntries));
   revenueYtdValue.textContent = formatCurrency(getPeriodRevenue(ytdEntries));
 
@@ -1173,7 +1221,7 @@ function renderRevenueSection() {
     return;
   }
 
-  setStatus(revenueNote, `Last customer invoice was ${formatDate(lastEntry.invoiceDate)} for ${lastEntry.customer}.`, "status-good");
+  setStatus(revenueNote, "Customer invoices stay separate from maintenance and fuel expenses.", "status-info");
   revenueTableBody.innerHTML = entries.map((entry) => `
     <tr>
       <td>${formatDate(entry.invoiceDate)}</td>
@@ -1386,6 +1434,11 @@ function refreshDashboardClocks() {
 
   if (state.weeklyExceeded) {
     warningMessages.push(`${state.weeklyHours}-hour weekly clock has been exceeded.`);
+  }
+
+  const pmAlert = getPmAlertState();
+  if (pmAlert.level === "overdue" || pmAlert.level === "soon") {
+    warningMessages.push(pmAlert.message);
   }
 
   warningBar.hidden = warningMessages.length === 0;
