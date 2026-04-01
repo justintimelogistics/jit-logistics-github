@@ -717,7 +717,14 @@
 
         <label>
           <span>Service type</span>
-          <input id="maintenanceType" name="maintenanceType" type="text" placeholder="PM Service" required>
+          <select id="maintenanceType" name="maintenanceType" required>
+            <option value="PM">PM</option>
+            <option value="Tires">Tires</option>
+            <option value="Brakes">Brakes</option>
+            <option value="Repair">Repair</option>
+            <option value="Inspection">Inspection</option>
+            <option value="Other">Other</option>
+          </select>
         </label>
 
         <label>
@@ -737,8 +744,13 @@
       </div>
 
       <label class="form-stack">
-        <span>Note</span>
+        <span id="maintenanceDescriptionLabel">Note</span>
         <textarea id="maintenanceDescription" name="maintenanceDescription" rows="3" placeholder="Filters, oil, grease, tires, brakes..."></textarea>
+      </label>
+
+      <label class="form-stack" id="maintenanceOtherWrap" hidden>
+        <span>Other description</span>
+        <input id="maintenanceOtherDescription" name="maintenanceOtherDescription" type="text" placeholder="Enter custom service type">
       </label>
 
       <p class="form-note" id="maintenanceFormNote">Use this for PMs, repairs, and scheduled service history.</p>

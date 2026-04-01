@@ -157,6 +157,9 @@ const maintenanceCostInput = document.getElementById("maintenanceCost");
 const maintenanceNextDueMileageInput = document.getElementById("maintenanceNextDueMileage");
 const maintenanceNextDueDateInput = document.getElementById("maintenanceNextDueDate");
 const maintenanceDescriptionInput = document.getElementById("maintenanceDescription");
+const maintenanceDescriptionLabel = document.getElementById("maintenanceDescriptionLabel");
+const maintenanceOtherWrap = document.getElementById("maintenanceOtherWrap");
+const maintenanceOtherDescriptionInput = document.getElementById("maintenanceOtherDescription");
 const maintenanceFormNote = document.getElementById("maintenanceFormNote");
 const addMaintenanceButton = document.getElementById("addMaintenanceButton");
 const closeMaintenanceModalButton = document.getElementById("closeMaintenanceModal");
@@ -985,6 +988,16 @@ function isPmService(serviceType) {
   return normalized === "PM" || normalized.startsWith("PM ");
 }
 
+const MAINTENANCE_TYPE_OPTIONS = new Set(["PM", "Tires", "Brakes", "Repair", "Inspection", "Other"]);
+
+function syncMaintenanceTypeUi() {
+  const selectedType = maintenanceTypeInput.value;
+  const isOther = selectedType === "Other";
+  maintenanceOtherWrap.hidden = !isOther;
+  maintenanceOtherDescriptionInput.required = isOther;
+  maintenanceDescriptionLabel.textContent = isOther ? "Note" : "Note";
+}
+
 function getMilesToNextPm(odometer) {
   if (!Number.isFinite(odometer)) {
     return null;
@@ -1720,6 +1733,9 @@ function openMaintenanceModal() {
   maintenanceForm.reset();
   deleteMaintenanceEntryButton.hidden = true;
   maintenanceDateInput.value = new Date().toISOString().slice(0, 10);
+  maintenanceTypeInput.value = "PM";
+  maintenanceOtherDescriptionInput.value = "";
+  syncMaintenanceTypeUi();
   const latestOdometer = getLatestOdometer();
   if (latestOdometer != null) {
     maintenanceOdometerInput.value = String(Math.round(latestOdometer));
@@ -1733,6 +1749,9 @@ function closeMaintenanceModal() {
   maintenanceForm.reset();
   editingMaintenanceKey = null;
   deleteMaintenanceEntryButton.hidden = true;
+  maintenanceTypeInput.value = "PM";
+  maintenanceOtherDescriptionInput.value = "";
+  syncMaintenanceTypeUi();
   setStatus(maintenanceFormNote, "Use this for PMs, repairs, and scheduled service history.", "status-info");
 }
 
@@ -1744,7 +1763,14 @@ function openMaintenanceEditModal(key) {
   maintenanceForm.reset();
   maintenanceDateInput.value = String(entry.serviceDate ?? "").slice(0, 10);
   maintenanceOdometerInput.value = String(entry.odometer);
-  maintenanceTypeInput.value = entry.serviceType ?? "";
+  if (MAINTENANCE_TYPE_OPTIONS.has(entry.serviceType ?? "")) {
+    maintenanceTypeInput.value = entry.serviceType;
+    maintenanceOtherDescriptionInput.value = "";
+  } else {
+    maintenanceTypeInput.value = "Other";
+    maintenanceOtherDescriptionInput.value = entry.serviceType ?? "";
+  }
+  syncMaintenanceTypeUi();
   maintenanceCostInput.value = String(entry.cost ?? "");
   maintenanceNextDueMileageInput.value = entry.nextDueMileage ?? "";
   maintenanceNextDueDateInput.value = entry.nextDueDate ? String(entry.nextDueDate).slice(0, 10) : "";
@@ -2440,7 +2466,9 @@ async function handleMaintenanceSubmit(event) {
 
   const serviceDate = maintenanceDateInput.value;
   const odometer = Number(maintenanceOdometerInput.value);
-  const serviceType = maintenanceTypeInput.value.trim();
+  const selectedServiceType = maintenanceTypeInput.value.trim();
+  const otherServiceType = maintenanceOtherDescriptionInput.value.trim();
+  const serviceType = selectedServiceType === "Other" ? otherServiceType : selectedServiceType;
   const cost = Number(maintenanceCostInput.value);
   const nextDueMileage = maintenanceNextDueMileageInput.value ? Number(maintenanceNextDueMileageInput.value) : null;
   const nextDueDate = maintenanceNextDueDateInput.value || null;
@@ -2457,7 +2485,7 @@ async function handleMaintenanceSubmit(event) {
   }
 
   if (!serviceType) {
-    setStatus(maintenanceFormNote, "Service type is required.", "status-bad");
+    setStatus(maintenanceFormNote, selectedServiceType === "Other" ? "Other description is required." : "Service type is required.", "status-bad");
     return;
   }
 
@@ -2589,6 +2617,13 @@ ctHutRangeSelect.addEventListener("change", () => {
 
 reportRangeSelect.addEventListener("change", () => {
   setReportRange(reportRangeSelect.value);
+});
+
+maintenanceTypeInput.addEventListener("change", () => {
+  if (maintenanceTypeInput.value !== "Other") {
+    maintenanceOtherDescriptionInput.value = "";
+  }
+  syncMaintenanceTypeUi();
 });
 
 function showThirtyFourPreview() {
