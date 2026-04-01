@@ -178,6 +178,7 @@ const closeRevenueModalButton = document.getElementById("closeRevenueModal");
 const cancelRevenueModalButton = document.getElementById("cancelRevenueModal");
 const revenueTableBody = document.getElementById("revenueTableBody");
 const revenueNote = document.getElementById("revenueNote");
+const revenueLastInvoiceValue = document.getElementById("revenueLastInvoiceValue");
 const revenueMonthValue = document.getElementById("revenueMonthValue");
 const revenueYtdValue = document.getElementById("revenueYtdValue");
 const deleteRevenueEntryButton = document.getElementById("deleteRevenueEntryButton");
@@ -995,12 +996,7 @@ function getMilesToNextPm(odometer) {
 
 function getNextPmCountdown(odometer) {
   const latestPmEntry = getMaintenanceEntriesDescending().find((entry) => isPmService(entry.serviceType));
-  const nextDueMileage = latestPmEntry ? Number(latestPmEntry.nextDueMileage) : null;
   const pmOdometer = latestPmEntry ? Number(latestPmEntry.odometer) : null;
-
-  if (Number.isFinite(nextDueMileage) && Number.isFinite(odometer) && nextDueMileage >= odometer) {
-    return nextDueMileage - odometer;
-  }
 
   if (Number.isFinite(pmOdometer) && Number.isFinite(odometer) && odometer >= pmOdometer) {
     return Math.max(0, pmOdometer + 10000 - odometer);
@@ -1208,6 +1204,7 @@ function renderRevenueSection() {
   const ytdEntries = getRangeEntries(entries, getStartOfYear(new Date()));
   const lastEntry = entries[0];
 
+  revenueLastInvoiceValue.textContent = lastEntry ? formatCurrency(lastEntry.amount) : "--";
   revenueMonthValue.textContent = formatCurrency(getPeriodRevenue(monthEntries));
   revenueYtdValue.textContent = formatCurrency(getPeriodRevenue(ytdEntries));
 
@@ -1221,7 +1218,7 @@ function renderRevenueSection() {
     return;
   }
 
-  setStatus(revenueNote, "Customer invoices stay separate from maintenance and fuel expenses.", "status-info");
+  setStatus(revenueNote, "", "status-info");
   revenueTableBody.innerHTML = entries.map((entry) => `
     <tr>
       <td>${formatDate(entry.invoiceDate)}</td>
