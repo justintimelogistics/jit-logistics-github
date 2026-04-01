@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1F1F1F"/>
+      <stop offset="100%" stop-color="#0B0B0B"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="url(#bg)"/>
+  <rect x="16" y="16" width="160" height="160" rx="34" fill="none" stroke="#DC2626" stroke-width="6"/>
+  <circle cx="96" cy="96" r="52" fill="#111111" stroke="#E5E5E5" stroke-opacity="0.08" stroke-width="4"/>
+  <path d="M96 96 L96 56" stroke="#DC2626" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="96" cy="96" r="8" fill="#E5E5E5"/>
+  <text x="96" y="154" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#E5E5E5">JIT</text>
+</svg>
