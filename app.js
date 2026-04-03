@@ -188,6 +188,7 @@ const deleteRevenueEntryButton = document.getElementById("deleteRevenueEntryButt
 const timeClockEditModal = document.getElementById("timeClockEditModal");
 const timeClockEditForm = document.getElementById("timeClockEditForm");
 const timeClockEditActionInput = document.getElementById("timeClockEditAction");
+const timeClockEditDateTimeInput = document.getElementById("timeClockEditDateTime");
 const timeClockEditDestinationInput = document.getElementById("timeClockEditDestination");
 const timeClockEditNote = document.getElementById("timeClockEditNote");
 const closeTimeClockEditModalButton = document.getElementById("closeTimeClockEditModal");
@@ -497,6 +498,16 @@ function formatDateTime(isoDate) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(isoDate));
+}
+
+function toDateTimeLocalValue(isoDate) {
+  const date = new Date(isoDate);
+  const local = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+  return local.toISOString().slice(0, 16);
+}
+
+function fromDateTimeLocalValue(value) {
+  return value ? new Date(value).toISOString() : "";
 }
 
 function toDateInputValue(isoDate) {
@@ -1227,11 +1238,15 @@ function renderRevenueSection() {
         <td colspan="5">No customer invoices yet. Use Add Invoice to start tracking revenue.</td>
       </tr>
     `;
-    setStatus(revenueNote, "Customer invoices stay separate from maintenance and fuel expenses.", "status-info");
+    if (revenueNote) {
+      setStatus(revenueNote, "Customer invoices stay separate from maintenance and fuel expenses.", "status-info");
+    }
     return;
   }
 
-  setStatus(revenueNote, "", "status-info");
+  if (revenueNote) {
+    setStatus(revenueNote, "", "status-info");
+  }
   revenueTableBody.innerHTML = entries.map((entry) => `
     <tr>
       <td>${formatDate(entry.invoiceDate)}</td>
@@ -1819,6 +1834,7 @@ function openTimeClockEditModal(key) {
   editingTimeClockKey = getEntryKey(entry);
   timeClockEditForm.reset();
   timeClockEditActionInput.value = String(entry.action ?? "IN").toUpperCase();
+  timeClockEditDateTimeInput.value = toDateTimeLocalValue(entry.createdAt);
   timeClockEditDestinationInput.value = entry.destination ?? "";
   deleteTimeClockEntryButton.hidden = false;
   setStatus(timeClockEditNote, "Edit the action or destination for this time entry.", "status-info");
@@ -2111,6 +2127,7 @@ function updateLocalTimeClockEntry(key, entry) {
       ? { ...candidate, ...entry }
       : candidate
   ));
+  timeClockEntries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   saveStoredArray(TIME_CLOCK_STORAGE_KEY, timeClockEntries);
   refreshTimeClockSection();
 }
@@ -2576,10 +2593,16 @@ async function handleTimeClockEditSubmit(event) {
   event.preventDefault();
 
   const action = String(timeClockEditActionInput.value ?? "").toUpperCase();
+  const createdAt = fromDateTimeLocalValue(timeClockEditDateTimeInput.value);
   const destination = timeClockEditDestinationInput.value.trim();
 
   if (action !== "IN" && action !== "OUT") {
     setStatus(timeClockEditNote, "Action must be IN or OUT.", "status-bad");
+    return;
+  }
+
+  if (!createdAt) {
+    setStatus(timeClockEditNote, "Date and time are required.", "status-bad");
     return;
   }
 
@@ -2588,7 +2611,7 @@ async function handleTimeClockEditSubmit(event) {
     return;
   }
 
-  const payload = { action, destination };
+  const payload = { action, destination, createdAt };
 
   if (storageMode === "remote") {
     await updateRemoteTimeClockEntry(editingTimeClockKey, payload);
