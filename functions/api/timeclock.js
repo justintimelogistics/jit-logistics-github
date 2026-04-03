@@ -108,6 +108,7 @@ export async function onRequestPut(context) {
 
   const id = Number(body?.id);
   const action = String(body?.action ?? "").toUpperCase();
+  const createdAt = String(body?.createdAt ?? "").trim();
   const destination = String(body?.destination ?? "").trim();
 
   if (!Number.isFinite(id)) {
@@ -118,16 +119,20 @@ export async function onRequestPut(context) {
     return json({ error: "Action must be IN or OUT." }, { status: 400 });
   }
 
+  if (!createdAt) {
+    return json({ error: "Date and time are required." }, { status: 400 });
+  }
+
   if (!destination) {
     return json({ error: "Destination is required." }, { status: 400 });
   }
 
   await context.env.DB.prepare(`
     UPDATE time_clock_entries
-    SET action = ?2, destination = ?3
+    SET action = ?2, created_at = ?3, destination = ?4
     WHERE id = ?1
   `)
-    .bind(id, action, destination)
+    .bind(id, action, createdAt, destination)
     .run();
 
   const entries = await listEntries(context.env);
