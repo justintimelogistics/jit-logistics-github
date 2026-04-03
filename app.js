@@ -188,7 +188,8 @@ const deleteRevenueEntryButton = document.getElementById("deleteRevenueEntryButt
 const timeClockEditModal = document.getElementById("timeClockEditModal");
 const timeClockEditForm = document.getElementById("timeClockEditForm");
 const timeClockEditActionInput = document.getElementById("timeClockEditAction");
-const timeClockEditDateTimeInput = document.getElementById("timeClockEditDateTime");
+const timeClockEditDateInput = document.getElementById("timeClockEditDate");
+const timeClockEditTimeInput = document.getElementById("timeClockEditTime");
 const timeClockEditDestinationInput = document.getElementById("timeClockEditDestination");
 const timeClockEditNote = document.getElementById("timeClockEditNote");
 const closeTimeClockEditModalButton = document.getElementById("closeTimeClockEditModal");
@@ -483,11 +484,12 @@ function formatNumber(value, maximumFractionDigits = 0) {
 }
 
 function formatDate(isoDate) {
+  const parsed = parseAppDate(isoDate);
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(new Date(isoDate));
+  }).format(parsed);
 }
 
 function formatDateTime(isoDate) {
@@ -495,23 +497,45 @@ function formatDateTime(isoDate) {
     month: "short",
     day: "numeric",
     year: "numeric",
-    hour: "numeric",
+    hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   }).format(new Date(isoDate));
 }
 
-function toDateTimeLocalValue(isoDate) {
-  const date = new Date(isoDate);
-  const local = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-  return local.toISOString().slice(0, 16);
+function parseAppDate(value) {
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T12:00:00`);
+  }
+
+  return new Date(value);
 }
 
-function fromDateTimeLocalValue(value) {
-  return value ? new Date(value).toISOString() : "";
+function toTime24Value(isoDate) {
+  const date = new Date(isoDate);
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function toDateInputValue(isoDate) {
+  if (typeof isoDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+    return isoDate.slice(0, 10);
+  }
+
   return isoDate ? new Date(isoDate).toISOString().slice(0, 10) : "";
+}
+
+function fromDateAndTimeInputs(dateValue, timeValue) {
+  if (!dateValue || !timeValue) {
+    return "";
+  }
+
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(timeValue.trim());
+  if (!match) {
+    return "";
+  }
+
+  const [, hours, minutes] = match;
+  return new Date(`${dateValue}T${hours}:${minutes}:00`).toISOString();
 }
 
 function buildIsoFromDateInput(dateValue, fallbackIso = "") {
@@ -557,7 +581,7 @@ function formatCurrencyMetric(value) {
 }
 
 function getEntryDate(entry) {
-  return new Date(entry.invoiceDate ?? entry.serviceDate ?? entry.createdAt);
+  return parseAppDate(entry.invoiceDate ?? entry.serviceDate ?? entry.createdAt);
 }
 
 function getEntryKey(entry) {
@@ -1834,7 +1858,8 @@ function openTimeClockEditModal(key) {
   editingTimeClockKey = getEntryKey(entry);
   timeClockEditForm.reset();
   timeClockEditActionInput.value = String(entry.action ?? "IN").toUpperCase();
-  timeClockEditDateTimeInput.value = toDateTimeLocalValue(entry.createdAt);
+  timeClockEditDateInput.value = toDateInputValue(entry.createdAt);
+  timeClockEditTimeInput.value = toTime24Value(entry.createdAt);
   timeClockEditDestinationInput.value = entry.destination ?? "";
   deleteTimeClockEntryButton.hidden = false;
   setStatus(timeClockEditNote, "Edit the action or destination for this time entry.", "status-info");
@@ -2593,7 +2618,7 @@ async function handleTimeClockEditSubmit(event) {
   event.preventDefault();
 
   const action = String(timeClockEditActionInput.value ?? "").toUpperCase();
-  const createdAt = fromDateTimeLocalValue(timeClockEditDateTimeInput.value);
+  const createdAt = fromDateAndTimeInputs(timeClockEditDateInput.value, timeClockEditTimeInput.value);
   const destination = timeClockEditDestinationInput.value.trim();
 
   if (action !== "IN" && action !== "OUT") {
@@ -2602,7 +2627,7 @@ async function handleTimeClockEditSubmit(event) {
   }
 
   if (!createdAt) {
-    setStatus(timeClockEditNote, "Date and time are required.", "status-bad");
+    setStatus(timeClockEditNote, "Enter time in 24-hour format like 14:30.", "status-bad");
     return;
   }
 

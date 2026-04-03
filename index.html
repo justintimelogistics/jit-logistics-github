@@ -834,13 +834,20 @@
         </label>
 
         <label>
-          <span>Date and time</span>
-          <input id="timeClockEditDateTime" name="timeClockEditDateTime" type="datetime-local" required>
+          <span>Destination</span>
+          <input id="timeClockEditDestination" name="timeClockEditDestination" type="text" placeholder="Hartford, CT" required>
+        </label>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          <span>Date</span>
+          <input id="timeClockEditDate" name="timeClockEditDate" type="date" required>
         </label>
 
         <label>
-          <span>Destination</span>
-          <input id="timeClockEditDestination" name="timeClockEditDestination" type="text" placeholder="Hartford, CT" required>
+          <span>Time (24-hour)</span>
+          <input id="timeClockEditTime" name="timeClockEditTime" type="text" inputmode="numeric" pattern="^([01]\\d|2[0-3]):[0-5]\\d$" placeholder="14:30" required>
         </label>
       </div>
 
